@@ -72,6 +72,7 @@ def get_selected_matches(matches):
                     print(f"The index '{index}' is out of the range. Please try again.")
                     valid_input = False
                     break
+            else:
                 match_indexes.append(tuple(indexes))
                 valid_input = True
             if not valid_input:
@@ -81,7 +82,7 @@ def get_selected_matches(matches):
 
         for match_index in match_indexes:
             index1, index2 = match_index
-            selected_matches.append(matches[index1-1:index2-1])
+            selected_matches.extend(matches[index1 - 1:index2])
 
         valid_input = True
 

@@ -41,16 +41,51 @@ def print_matches(matches):
     print("―" * os.get_terminal_size().columns)
 
 
-def get_selected_matches(matches):
-    match_indexes = []
+def get_ranges_from_user():
     input_ranges = input("Select matches to replace by providing at least one range in a 'index:index' format, separated by a comma (,): ")
-    while not matches:
-        input_ranges = input("Please enter at least one range: ")
+    ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
 
-    matches = re.findall("[0-9]+:[0-9]+", input_ranges)
-    for match in matches:
-        match_indexes.append(tuple(match.split(":")))
-    return match_indexes
+    while not input_ranges or not len(ranges) == len(input_ranges.split()):
+        if not input_ranges:
+            input_ranges = input("Please enter at least one range: ")
+            ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
+            continue
+        if not len(ranges) == len(input_ranges.split()):
+            input_ranges = input("One or more of the ranges are invalid. Please enter at least on valid range: ")
+            ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
+            continue
+
+    return ranges
+
+
+def get_selected_matches(matches):
+    selected_matches = []
+    valid_input = False
+    while not valid_input:
+        ranges = get_ranges_from_user()
+
+        match_indexes = []
+        for r in ranges:
+            indexes = [int(index) for index in r.split(":")]
+            for index in indexes:
+                if index < 1 or index > len(matches):
+                    print(f"The index '{index}' is out of the range. Please try again.")
+                    valid_input = False
+                    break
+                match_indexes.append(tuple(indexes))
+                valid_input = True
+            if not valid_input:
+                break
+        if not valid_input:
+            continue
+
+        for match_index in match_indexes:
+            index1, index2 = match_index
+            selected_matches.append(matches[index1-1:index2-1])
+
+        valid_input = True
+
+    return selected_matches
 
 
 def main():
@@ -71,8 +106,9 @@ def main():
     matches = get_matches_from_file(source_path, file_paths)
 
     print_matches(matches)
+
     selected_matches = get_selected_matches(matches)
-    print(selected_matches)
+    print_matches(selected_matches)
 
 
 if __name__ == "__main__":

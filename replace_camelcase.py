@@ -25,7 +25,8 @@ def get_matches_from_file(source, file_paths):
         with open(file) as f:
             for line in f:
                 line_number += 1
-                matches_in_line = re.findall("\\W[a-zA-Z]+(?:[A-Z][a-z]*)+\\W", line)
+                matches_in_line = re.findall("\\W(?:[A-Z][a-z]*)+\\W|\\W[a-z]+(?:[A-Z][a-z]*)+\\W", line)
+                print (matches_in_line)
                 if matches_in_line:
                     for match in matches_in_line:
                         matches.append(tuple([os.path.relpath(file, source), line_number, match[1:-1], line]))
@@ -89,6 +90,12 @@ def get_selected_matches(matches):
     return selected_matches
 
 
+def to_snake_case(camel_case):
+    parts = re.findall("^[A-Z]?[a-z]*|[A-Z][a-z]+|[A-Z]+", camel_case)
+    snake_case = "_".join(parts).lower()
+    return snake_case
+
+
 def main():
     args = sys.argv[1:]
     if len(args) < 2:
@@ -109,7 +116,6 @@ def main():
     print_matches(matches)
 
     selected_matches = get_selected_matches(matches)
-    print_matches(selected_matches)
 
 
 if __name__ == "__main__":

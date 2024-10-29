@@ -1,6 +1,9 @@
+import shutil
 import sys
 import re
 import os
+
+BACKUP_FOLDER = "backup"
 
 def validate_extensions(extensions):
     for ext in extensions:
@@ -21,8 +24,8 @@ def get_source_files(source_path, extensions):
 def get_matches_from_files(source, file_paths):
     matches_in_files = {}
 
-    line_number = 0
     for file in file_paths:
+        line_number = 0
         with open(file) as f:
             matches_in_file = []
             for line in f:
@@ -130,6 +133,47 @@ def to_snake_case(camel_case):
     return snake_case
 
 
+def create_subdirectories(file_paths):
+    for path in file_paths:
+        dir_path, _ = os.path.split(path)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+
+def backup_affected_files(selected_matches, source_path):
+    rel_paths = list(selected_matches.keys())
+    full_paths = [os.path.join(source_path, rel_path) for rel_path in rel_paths]
+
+    dest_path = os.path.join(os.getcwd(), BACKUP_FOLDER)
+    full_dest_paths = [os.path.join(dest_path, rel_path) for rel_path in rel_paths]
+
+    for source_file, dest_file in zip(full_paths, full_dest_paths):
+        dest_dir, _ = os.path.split(dest_file)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+
+        try:
+            shutil.copy(source_file, dest_file)
+        except PermissionError:
+            print("Permission denied.")
+        except:
+            print("Error occurred while copying file.")
+
+
+def replace_camelcase_in_files(selected_matches, source_path):
+    rel_paths = list(selected_matches.keys())
+    full_paths = [os.path.join(source_path, rel_path) for rel_path in rel_paths]
+
+    for rel_path, file_path in zip(rel_paths, full_paths):
+        with open(file_path, "r+") as f:
+            lines = f.readlines()
+            f.seek(0)
+            for match in selected_matches[rel_path]:
+                line_number, matched_word, _ = match
+                lines[line_number - 1] = lines[line_number - 1].replace(matched_word, to_snake_case(matched_word))
+            f.writelines(lines)
+
+
 def main():
     args = sys.argv[1:]
     if len(args) < 2:
@@ -148,8 +192,11 @@ def main():
     matches_in_files = get_matches_from_files(source_path, file_paths)
 
     print_matches(matches_in_files)
+
     selected_matches = get_selected_matches(matches_in_files)
-    print_matches(selected_matches)
+
+    backup_affected_files(selected_matches, source_path)
+    replace_camelcase_in_files(selected_matches, source_path)
 
 
 if __name__ == "__main__":

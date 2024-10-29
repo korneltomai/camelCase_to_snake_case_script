@@ -51,11 +51,15 @@ def print_matches(matches_in_files):
     print("―" * os.get_terminal_size().columns)
 
 
-def get_ranges_from_user():
+def get_ranges_from_user(amount_of_matches):
+    match_ranges = []
+
     input_ranges = input("Select matches to replace by providing at least one range in a 'index:index' format, separated by a whitespace: ")
     ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
 
-    while not input_ranges or not len(ranges) == len(input_ranges.split()):
+    valid_input = False
+
+    while not valid_input:
         if not input_ranges:
             input_ranges = input("Please enter at least one range: ")
             ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
@@ -65,10 +69,31 @@ def get_ranges_from_user():
             ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
             continue
 
-    return ranges
+        for r in ranges:
+            indexes = [int(index) for index in r.split(":")]
+            for index in indexes:
+                if index < 1 or index > amount_of_matches:
+                    input_ranges = input(f"The index '{index}' is out of the range. Please enter at least on valid range:")
+                    ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
+                    valid_input = False
+                    break
+            else:
+                if indexes[0] > indexes[1]:
+                    input_ranges = input(f"The starting index can't be bigger than the ending index. In '{indexes[0]}:{indexes[1]}'. Please enter at least on valid range:")
+                    ranges = re.findall("[0-9]+:[0-9]+", input_ranges)
+                    valid_input = False
+                else:
+                    match_ranges.append(tuple(indexes))
+                    valid_input = True
+            if not valid_input:
+                break
+        if not valid_input:
+            continue
+
+    return match_ranges
 
 
-def get_length_of_all_matches(matches_in_files):
+def get_amount_of_all_matches(matches_in_files):
     length = 0
     for _, matches_in_file in matches_in_files.items():
         length += len(matches_in_file)
@@ -93,36 +118,17 @@ def get_match_by_index(matches_in_files, index):
 def get_selected_matches(matches_in_files):
     selected_matches = {}
 
-    valid_input = False
-    while not valid_input:
-        ranges = get_ranges_from_user()
+    amount_of_matches = get_amount_of_all_matches(matches_in_files);
+    match_ranges = get_ranges_from_user(amount_of_matches)
 
-        match_ranges = []
-        for r in ranges:
-            indexes = [int(index) for index in r.split(":")]
-            for index in indexes:
-                if index < 1 or index > get_length_of_all_matches(matches_in_files):
-                    print(f"The index '{index}' is out of the range. Please try again.")
-                    valid_input = False
-                    break
+    for match_range in match_ranges:
+        index1, index2 = match_range
+        for index in range(index1 - 1, index2):
+            file, match = get_match_by_index(matches_in_files, index)
+            if file not in selected_matches:
+                selected_matches[file] = [match]
             else:
-                match_ranges.append(tuple(indexes))
-                valid_input = True
-            if not valid_input:
-                break
-        if not valid_input:
-            continue
-
-        for match_range in match_ranges:
-            index1, index2 = match_range
-            for index in range(index1 - 1, index2):
-                file, match = get_match_by_index(matches_in_files, index)
-                if file not in selected_matches:
-                    selected_matches[file] = [match]
-                else:
-                    selected_matches[file].append(match)
-
-        valid_input = True
+                selected_matches[file].append(match)
 
     return selected_matches
 

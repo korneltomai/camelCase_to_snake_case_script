@@ -42,12 +42,15 @@ def get_matches_from_files(source, file_paths):
 
 
 def print_matches(matches_in_files):
-    index = 1
     print("―" * os.get_terminal_size().columns)
-    for file, matches_in_file in matches_in_files.items():
-        for match in matches_in_file:
-            print(f"{index}. {file} {match}")
-            index += 1
+    if matches_in_files:
+        index = 1
+        for file, matches_in_file in matches_in_files.items():
+            for match in matches_in_file:
+                print(f"{index}.) {file} {match}")
+                index += 1
+    else:
+        print("No matches have been found.")
     print("―" * os.get_terminal_size().columns)
 
 
@@ -195,10 +198,10 @@ def main():
 
     print_matches(matches_in_files)
 
-    selected_matches = get_selected_matches(matches_in_files)
-
-    backup_affected_files(selected_matches, source_path)
-    replace_camelcase_in_files(selected_matches, source_path)
+    if  matches_in_files:
+        selected_matches = get_selected_matches(matches_in_files)
+        backup_affected_files(selected_matches, source_path)
+        replace_camelcase_in_files(selected_matches, source_path)
 
 
 if __name__ == "__main__":
